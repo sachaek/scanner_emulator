@@ -7,28 +7,12 @@
 - Кроссплатформенная работа (Windows, Linux, macOS)
 - Реалистичная эмуляция ввода с настраиваемыми задержками
 - Portable версии для всех платформ
-- Не перехватывает фокус после сканирования
 
-## Установка
+## Установка Windows
 
-### Windows
-1. Скачайте `barcode_emulator.exe` из папки `dist_windows`
+1. Скачайте `barcode_emulator.exe` из корневой папки 
 2. Запустите исполняемый файл
 
-### Linux
-```bash
-# Требуется python3 и xdotool
-sudo apt-get install python3 python3-pip xdotool
-pip3 install pynput
-python3 -m barcode_emulator.main
-```
-
-### macOS
-```bash
-brew install python
-pip3 install pynput
-python3 -m barcode_emulator.main
-```
 
 ## Сборка исполняемых файлов
 
