@@ -1,3 +1,5 @@
+from tkinter import messagebox
+
 from pynput.keyboard import Controller, Key
 import tkinter as tk
 import time
@@ -9,9 +11,15 @@ def scan_barcode():
         label.config(text="Длина строки не может быть больше 30")
         return
 
+    response = messagebox.showinfo(
+        "Подготовка к сканированию",
+        "У вас 2 секунды чтобы переключиться на целевое окно для сканирования штрих-кода\n"
+        "Нажмите OK для продолжения",
+        parent=root
+    )
+
     root.withdraw()  # Скрываем окно
     time.sleep(2)  # Даём время свернуть GUI
-
 
     keyboard = Controller()
     delays_ms = [4] + [5] * (len(barcode) - 1)
