@@ -57,8 +57,20 @@ class ScannerGUI:
                 "У вас 2 секунды чтобы переключиться на целевое окно\nНажмите OK для продолжения",
                 parent=self.root
         ):
-            self.root.iconify()  # Сворачиваем окно вместо закрытия
+            # Запоминаем текущее состояние поверх других окон
+            topmost = self.root.attributes('-topmost')
+
+            # Устанавливаем окно как не поверх других и сворачиваем
+            self.root.attributes('-topmost', False)
+            self.root.iconify()
+
+            # Эмулируем ввод штрих-кода
             self.scanner.emulate_typing(barcode)
-            self.root.deiconify()  # Восстанавливаем окно
-            self.entry.delete(0, tk.END)  # Очищаем поле ввода
-            self.entry.focus_set()  # Устанавливаем фокус обратно на поле ввода
+
+            # Восстанавливаем окно без активации
+            self.root.deiconify()
+            self.root.attributes('-topmost', topmost)  # Восстанавливаем предыдущее состояние
+
+            # Очищаем поле ввода и устанавливаем фокус без активации окна
+            self.entry.delete(0, tk.END)
+            self.root.after(100, lambda: self.entry.focus_force())  # focus_force вместо focus_set
