@@ -52,12 +52,13 @@ class ScannerGUI:
             )
             return
 
-        messagebox.showinfo(
-            "Подготовка к сканированию",
-            "У вас 2 секунды чтобы переключиться на целевое окно\nНажмите OK для продолжения",
-            parent=self.root
-        )
-
-        self.root.withdraw()
-        self.scanner.emulate_typing(barcode)
-        self.root.destroy()
+        if messagebox.showinfo(
+                "Подготовка к сканированию",
+                "У вас 2 секунды чтобы переключиться на целевое окно\nНажмите OK для продолжения",
+                parent=self.root
+        ):
+            self.root.iconify()  # Сворачиваем окно вместо закрытия
+            self.scanner.emulate_typing(barcode)
+            self.root.deiconify()  # Восстанавливаем окно
+            self.entry.delete(0, tk.END)  # Очищаем поле ввода
+            self.entry.focus_set()  # Устанавливаем фокус обратно на поле ввода

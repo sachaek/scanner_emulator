@@ -19,6 +19,7 @@ GUI_CONFIG = {
         'bg': "#4CAF50",
         'fg': "white",
         'height': 1,
-        'width': 15
-    }
+        'width': 15,
+    },
+    'rescan_delay': 0.5
 }

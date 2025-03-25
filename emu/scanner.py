@@ -20,18 +20,16 @@ class BarcodeScanner:
         """
         Эмуляция ввода штрих-кода
         :param barcode: Строка штрих-кода
+        :return: None
         """
         time.sleep(self.config['initial_delay'])
 
-        # Ввод каждого символа с задержкой
         for i, char in enumerate(barcode):
             self.keyboard.press(char)
             self.keyboard.release(char)
-
-            # Разная задержка для первого и последующих символов
             delay = self.config['first_char_delay'] if i == 0 else self.config['char_delay']
             time.sleep(delay)
 
-        # Завершаем ввод нажатием Enter
         self.keyboard.press(Key.enter)
         self.keyboard.release(Key.enter)
+        # Убрали завершение программы
