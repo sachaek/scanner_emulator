@@ -10,7 +10,8 @@ def scan_barcode():
         return
 
     root.withdraw()  # Скрываем окно
-    time.sleep(0.5)  # Даём время свернуть GUI
+    time.sleep(2)  # Даём время свернуть GUI
+
 
     keyboard = Controller()
     delays_ms = [4] + [5] * (len(barcode) - 1)
@@ -26,16 +27,32 @@ def scan_barcode():
     root.destroy()  # Закрываем программу
 
 
+# Создаем главное окно
 root = tk.Tk()
-root.title("Эмулятор сканера")
+root.title("Сушкоф. Эмулятор сканера штрих-кодов")
+root.geometry("400x200")  # Устанавливаем размер окна 400x200 пикселей
 
-label = tk.Label(root, text="Введите штрих-код:")
-label.pack()
+# Настраиваем шрифт
+font_style = ("Arial", 12)
 
-entry = tk.Entry(root)
-entry.pack()
+# Создаем рамку для группировки элементов
+frame = tk.Frame(root, padx=20, pady=20)
+frame.pack(expand=True, fill=tk.BOTH)
 
-button = tk.Button(root, text="Сканировать", command=scan_barcode)
+label = tk.Label(frame, text="Введите штрих-код:", font=font_style)
+label.pack(pady=(0, 10))
+
+entry = tk.Entry(frame, font=font_style, width=30)
+entry.pack(pady=(0, 20))
+
+button = tk.Button(frame, text="Сканировать", command=scan_barcode,
+                  font=font_style, bg="#4CAF50", fg="white", height=1, width=15)
 button.pack()
+
+# Устанавливаем фокус на поле ввода
+entry.focus_set()
+
+# Привязываем нажатие Enter к кнопке сканирования
+root.bind('<Return>', lambda event: scan_barcode())
 
 root.mainloop()
