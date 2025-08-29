@@ -14,6 +14,8 @@ class BarcodeScanner:
 
     def validate_barcode(self, barcode: str) -> bool:
         """Проверка валидности штрих-кода"""
+        # Всегда читаем актуальную конфигурацию (учитывает изменения в UI)
+        self.config = get_scanner_config()
         return len(barcode) <= self.config['max_length']
 
     def emulate_typing(self, barcode: str) -> None:

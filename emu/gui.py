@@ -164,8 +164,14 @@ class ScannerGUI(ThemedWindow):
             QMessageBox.critical(self, "Ошибка", f"Не удалось распознать изображение:\n{e}")
             return
 
-        text = "\n".join(values) if values else "Коды не найдены"
-        QMessageBox.information(self, "Результат", text)
+        if not values:
+            QMessageBox.information(self, "Результат", "Коды не найдены")
+            return
+
+        # Подставляем первый найденный код в поле ввода и ставим фокус
+        self.entry.setText(values[0])
+        self.entry.setFocus()
+        self.entry.selectAll()
 
 
     def open_scan_params(self):
