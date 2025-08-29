@@ -3,7 +3,9 @@
 """
 
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QAction, QFileDialog
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QAction, QFileDialog, QApplication
+import tempfile
+import os
 from .scanner import BarcodeScanner
 from .config import GUI_CONFIG
 from .theme import ThemedWindow
@@ -62,11 +64,13 @@ class ScannerGUI(ThemedWindow):
         button.clicked.connect(self.on_scan)
         layout.addWidget(button)
 
-        img_btn = QPushButton("Сканировать изображение…")
+        img_btn = QPushButton("Сканировать изображение из файла")
         img_btn.clicked.connect(self.on_scan_image)
         layout.addWidget(img_btn)
 
-        
+        clip_btn = QPushButton("Сканировать из буфера обмена")
+        clip_btn.clicked.connect(self.on_scan_clipboard)
+        layout.addWidget(clip_btn)
 
         self.entry.returnPressed.connect(self.on_scan)
 
@@ -129,6 +133,49 @@ class ScannerGUI(ThemedWindow):
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось распознать изображение:\n{e}")
             return
+
+        if not values:
+            QMessageBox.information(self, "Результат", "Коды не найдены")
+            return
+
+        # Подставляем первый найденный код в поле ввода и ставим фокус
+        self.entry.setText(values[0])
+        self.entry.setFocus()
+        self.entry.selectAll()
+
+    def on_scan_clipboard(self):
+        app = QApplication.instance()
+        if app is None:
+            QMessageBox.critical(self, "Ошибка", "Не удалось получить доступ к буферу обмена")
+            return
+
+        clipboard = app.clipboard()
+        img = clipboard.image()
+        if img.isNull():
+            QMessageBox.information(self, "Информация", "В буфере обмена нет изображения")
+            return
+
+        # Сохраняем изображение во временный файл
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp:
+            temp_path = temp.name
+        try:
+            img.save(temp_path, 'PNG')
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить изображение:\n{e}")
+            return
+
+        try:
+            from .barcodescannerfile import BarcodeImageScanner
+            reader = BarcodeImageScanner()
+            values = reader.decode_image(temp_path)
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось распознать изображение:\n{e}")
+        finally:
+            # Удаляем временный файл
+            try:
+                os.unlink(temp_path)
+            except Exception:
+                pass
 
         if not values:
             QMessageBox.information(self, "Результат", "Коды не найдены")
