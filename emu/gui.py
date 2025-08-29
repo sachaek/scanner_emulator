@@ -54,17 +54,7 @@ class ScannerGUI(QWidget):
         layout.addWidget(self.entry)
 
         button = QPushButton("Сканировать")
-        # Стили кнопки
-        btn_style = config.get('button_style', {})
-        bg = btn_style.get('bg')
-        fg = btn_style.get('fg')
-        if bg or fg:
-            button.setStyleSheet(
-                f"QPushButton {{"
-                f"{'background-color: ' + bg + ';' if bg else ''}"
-                f"{'color: ' + fg + ';' if fg else ''}"
-                f"}}"
-            )
+        # Темing управляется глобальным QSS в QApplication
         button.setDefault(True)
         button.clicked.connect(self.on_scan)
         layout.addWidget(button)

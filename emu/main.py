@@ -9,6 +9,45 @@ from emu.gui import ScannerGUI
 
 def main():
     app = QApplication(sys.argv)
+
+    # Единый тёмный стиль (QSS) по всему приложению
+    app.setStyle('Fusion')
+    qss = """
+    QWidget {
+        background-color: #121212;
+        color: #E0E0E0;
+    }
+    QLabel { color: #E0E0E0; }
+    QLineEdit {
+        background: #1E1E1E;
+        color: #E0E0E0;
+        border: 1px solid #333333;
+        border-radius: 6px;
+        padding: 6px 8px;
+        selection-background-color: #2F6FED;
+        selection-color: #FFFFFF;
+    }
+    QLineEdit:focus { border: 1px solid #4F8CFF; }
+
+    QPushButton {
+        background: #2A2A2A;
+        color: #E0E0E0;
+        border: 1px solid #3A3A3A;
+        border-radius: 8px; /* лёгкое скругление */
+        padding: 6px 12px;
+    }
+    QPushButton:hover { background: #323232; }
+    QPushButton:pressed { background: #262626; }
+    QPushButton:disabled {
+        color: #777777;
+        background: #1C1C1C;
+        border-color: #2A2A2A;
+    }
+
+    QMessageBox { background-color: #1A1A1A; }
+    """
+    app.setStyleSheet(qss)
+
     window = ScannerGUI()
     window.show()
     return app.exec_()
