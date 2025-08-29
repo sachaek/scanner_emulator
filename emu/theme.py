@@ -142,7 +142,16 @@ QSpinBox, QDoubleSpinBox {
 QSpinBox:focus, QDoubleSpinBox:focus { border: 1px solid #3D6BFF; }
 """
 
-_THEME_STORE = os.path.join(os.path.dirname(__file__), 'ui_theme.json')
+from .paths import get_user_data_dir
+_THEME_STORE = os.path.join(get_user_data_dir(), 'ui_theme.json')
+
+# Миграция старого пути в профиль пользователя
+_OLD_THEME_STORE = os.path.join(os.path.dirname(__file__), 'ui_theme.json')
+if os.path.exists(_OLD_THEME_STORE) and not os.path.exists(_THEME_STORE):
+    try:
+        os.replace(_OLD_THEME_STORE, _THEME_STORE)
+    except Exception:
+        pass
 
 
 def _load_theme_name() -> str:

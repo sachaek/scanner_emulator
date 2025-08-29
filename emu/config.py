@@ -5,6 +5,7 @@
 import json
 import os
 from typing import Dict, Any
+from .paths import get_user_data_dir
 
 
 # Настройки эмуляции сканера (умолчания)
@@ -16,7 +17,15 @@ SCANNER_CONFIG_DEFAULT: Dict[str, Any] = {
     'max_length': 30  # Максимальная длина штрих-кода
 }
 
-_OVERRIDE_PATH = os.path.join(os.path.dirname(__file__), 'scanner_config.json')
+_OVERRIDE_PATH = os.path.join(get_user_data_dir(), 'scanner_config.json')
+
+# Миграция старого расположения (рядом с модулем) -> в профиль пользователя
+_OLD_OVERRIDE_PATH = os.path.join(os.path.dirname(__file__), 'scanner_config.json')
+if os.path.exists(_OLD_OVERRIDE_PATH) and not os.path.exists(_OVERRIDE_PATH):
+    try:
+        os.replace(_OLD_OVERRIDE_PATH, _OVERRIDE_PATH)
+    except Exception:
+        pass
 
 
 def _load_override() -> Dict[str, Any]:
