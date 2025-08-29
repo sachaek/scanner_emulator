@@ -45,6 +45,27 @@ def main():
     }
 
     QMessageBox { background-color: #1A1A1A; }
+
+    QMenuBar {
+        background-color: #171717;
+        color: #E0E0E0;
+        border-bottom: 1px solid #2A2A2A;
+    }
+    QMenuBar::item {
+        background: transparent;
+        padding: 4px 8px;
+        margin: 0 2px;
+        border-radius: 4px;
+    }
+    QMenuBar::item:selected { background: #2A2A2A; }
+
+    QMenu {
+        background-color: #1B1B1B;
+        color: #E0E0E0;
+        border: 1px solid #2A2A2A;
+    }
+    QMenu::item { padding: 6px 18px; }
+    QMenu::item:selected { background-color: #2F2F2F; }
     """
     app.setStyleSheet(qss)
 

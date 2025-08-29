@@ -3,14 +3,14 @@
 """
 
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QAction
 import ctypes
 import platform
 from .scanner import BarcodeScanner
 from .config import GUI_CONFIG
 
 
-class ScannerGUI(QWidget):
+class ScannerGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.scanner = BarcodeScanner()
@@ -30,6 +30,8 @@ class ScannerGUI(QWidget):
             width, height = 400, 200
         self.resize(width, height)
 
+        # Центральный виджет и layout
+        central = QWidget(self)
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(10)
@@ -64,7 +66,9 @@ class ScannerGUI(QWidget):
 
         self.entry.returnPressed.connect(self.on_scan)
 
-        self.setLayout(layout)
+        central.setLayout(layout)
+        self.setCentralWidget(central)
+        self._build_menu()
         self.entry.setFocus()
 
     def showEvent(self, event):
@@ -128,3 +132,21 @@ class ScannerGUI(QWidget):
                 dwmapi.DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ctypes.byref(value), ctypes.sizeof(value))
         except Exception:
             pass
+
+    def open_scan_params(self):
+        from .pages.scan_params import ScanParamsDialog
+        dlg = ScanParamsDialog(self)
+        dlg.exec_()
+
+    def _build_menu(self) -> None:
+        menubar = self.menuBar()
+
+        menu_file = menubar.addMenu("Файл")
+        act_exit = QAction("Выход", self)
+        act_exit.triggered.connect(self.close)
+        menu_file.addAction(act_exit)
+
+        menu_params = menubar.addMenu("Параметры")
+        act_scan_params = QAction("Параметры сканирования", self)
+        act_scan_params.triggered.connect(self.open_scan_params)
+        menu_params.addAction(act_scan_params)
