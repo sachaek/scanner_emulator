@@ -128,3 +128,13 @@ class ScannerGUI(ThemedWindow):
         act_scan_params = QAction("Параметры сканирования", self)
         act_scan_params.triggered.connect(self.open_scan_params)
         menu_params.addAction(act_scan_params)
+
+        menu_settings = menubar.addMenu("Настройки")
+        act_style = QAction("Стиль", self)
+        act_style.triggered.connect(self.open_style_settings)
+        menu_settings.addAction(act_style)
+
+    def open_style_settings(self):
+        from .pages.settings_style import StyleSettingsDialog
+        dlg = StyleSettingsDialog(self)
+        dlg.exec_()
