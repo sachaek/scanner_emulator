@@ -12,7 +12,7 @@ from .paths import get_user_data_dir
 SCANNER_CONFIG_DEFAULT: Dict[str, Any] = {
     'initial_delay': 2.0,  # Задержка перед сканированием (сек)
     'first_char_delay': 0.05,  # Задержка первого символа (сек)
-    'char_delay': 0.02,  # Задержка последующих символов (сек)
+    'char_delay': 0.005,  # Задержка последующих символов (сек)
     'key_hold_delay': 0.005,  # Удержание клавиши перед отпусканием (сек)
     'max_length': 30  # Максимальная длина штрих-кода
 }
