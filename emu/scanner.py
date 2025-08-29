@@ -4,13 +4,13 @@
 
 from pynput.keyboard import Controller, Key, KeyCode
 import time
-from .config import SCANNER_CONFIG
+from .config import get_scanner_config
 
 
 class BarcodeScanner:
     def __init__(self):
         self.keyboard = Controller()
-        self.config = SCANNER_CONFIG
+        self.config = get_scanner_config()
 
     def validate_barcode(self, barcode: str) -> bool:
         """Проверка валидности штрих-кода"""
@@ -22,6 +22,8 @@ class BarcodeScanner:
         :param barcode: Строка штрих-кода
         :return: None
         """
+        # Обновляем конфиг на случай, если он был изменён пользователем
+        self.config = get_scanner_config()
         time.sleep(self.config['initial_delay'])
 
         # Доп. пауза перед самым первым символом, чтобы целевое окно гарантированно приняло фокус

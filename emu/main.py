@@ -66,6 +66,17 @@ def main():
     }
     QMenu::item { padding: 6px 18px; }
     QMenu::item:selected { background-color: #2F2F2F; }
+
+    QSpinBox, QDoubleSpinBox {
+        background: #1E1E1E;
+        color: #E0E0E0;
+        border: 1px solid #333333;
+        border-radius: 6px;
+        padding: 4px 6px;
+        selection-background-color: #2F6FED;
+        selection-color: #FFFFFF;
+    }
+    QSpinBox:focus, QDoubleSpinBox:focus { border: 1px solid #4F8CFF; }
     """
     app.setStyleSheet(qss)
 
