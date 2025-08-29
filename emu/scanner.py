@@ -41,3 +41,29 @@ class BarcodeScanner:
         time.sleep(self.config.get('key_hold_delay', 0.0))
         self.keyboard.release(Key.enter)
         # Убрали завершение программы
+
+    def emulate_batch_typing(self, barcodes: list[str]) -> None:
+        """Эмуляция ввода нескольких штрих-кодов подряд. Задержка перед сканированием выполняется один раз."""
+        if not barcodes:
+            return
+        # Обновляем конфиг
+        self.config = get_scanner_config()
+        time.sleep(self.config['initial_delay'])
+        time.sleep(self.config.get('first_char_delay', 0.0))
+
+        for idx, code in enumerate(barcodes):
+            if not isinstance(code, str):
+                continue
+            # Обрезаем по максимальной длине из конфига
+            if len(code) > self.config.get('max_length', 30):
+                code = code[: self.config.get('max_length', 30)]
+            for ch in code:
+                key_code = KeyCode.from_char(ch)
+                self.keyboard.press(key_code)
+                time.sleep(self.config.get('key_hold_delay', 0.0))
+                self.keyboard.release(key_code)
+                time.sleep(self.config.get('char_delay', 0.0))
+            # Enter после каждого кода
+            self.keyboard.press(Key.enter)
+            time.sleep(self.config.get('key_hold_delay', 0.0))
+            self.keyboard.release(Key.enter)

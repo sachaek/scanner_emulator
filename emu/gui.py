@@ -3,7 +3,7 @@
 """
 
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QAction
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QAction, QFileDialog
 from .scanner import BarcodeScanner
 from .config import GUI_CONFIG
 from .theme import ThemedWindow
@@ -62,6 +62,10 @@ class ScannerGUI(ThemedWindow):
         button.clicked.connect(self.on_scan)
         layout.addWidget(button)
 
+        from_file_btn = QPushButton("Сканировать из файла…")
+        from_file_btn.clicked.connect(self.on_scan_from_file)
+        layout.addWidget(from_file_btn)
+
         self.entry.returnPressed.connect(self.on_scan)
 
         central.setLayout(layout)
@@ -109,6 +113,41 @@ class ScannerGUI(ThemedWindow):
             # Очищаем поле и возвращаем фокус без навязывания активного окна
             self.entry.clear()
             QTimer.singleShot(100, self.entry.setFocus)
+
+    def on_scan_from_file(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Выберите файл со штрих-кодами", "", "Text Files (*.txt);;All Files (*)")
+        if not path:
+            return
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                lines = [line.strip() for line in f.readlines() if line.strip()]
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось прочитать файл:\n{e}")
+            return
+
+        if not lines:
+            QMessageBox.information(self, "Пусто", "Файл не содержит штрих-кодов")
+            return
+
+        ret = QMessageBox.information(
+            self,
+            "Подготовка к сканированию",
+            "У вас 2 секунды чтобы переключиться на целевое окно\nНажмите OK для начала пакетного сканирования",
+            QMessageBox.Ok
+        )
+        if ret != QMessageBox.Ok:
+            return
+
+        # Свернём окно, выполним пакет, затем восстановим
+        was_on_top = bool(self.windowFlags() & Qt.WindowStaysOnTopHint)
+        self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
+        self.show()
+        self.showMinimized()
+
+        self.scanner.emulate_batch_typing(lines)
+
+        self.setWindowFlag(Qt.WindowStaysOnTopHint, was_on_top)
+        self.showNormal()
 
 
     def open_scan_params(self):
