@@ -33,7 +33,7 @@ def main():
         background: #2A2A2A;
         color: #E0E0E0;
         border: 1px solid #3A3A3A;
-        border-radius: 8px; /* лёгкое скругление */
+        border-radius: 6px; /* чуть меньше скругление */
         padding: 6px 12px;
     }
     QPushButton:hover { background: #323232; }

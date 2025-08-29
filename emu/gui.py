@@ -4,6 +4,8 @@
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox
+import ctypes
+import platform
 from .scanner import BarcodeScanner
 from .config import GUI_CONFIG
 
@@ -12,6 +14,7 @@ class ScannerGUI(QWidget):
     def __init__(self):
         super().__init__()
         self.scanner = BarcodeScanner()
+        self._titlebar_dark_applied = False
         self.setup_ui()
 
     def setup_ui(self):
@@ -64,6 +67,13 @@ class ScannerGUI(QWidget):
         self.setLayout(layout)
         self.entry.setFocus()
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        # Один раз применяем тёмную тему для системной плашки на Windows
+        if not self._titlebar_dark_applied:
+            self._apply_windows_dark_title_bar()
+            self._titlebar_dark_applied = True
+
     def on_scan(self):
         """Обработчик события сканирования"""
         barcode = self.entry.text()
@@ -101,3 +111,20 @@ class ScannerGUI(QWidget):
             # Очищаем поле и возвращаем фокус без навязывания активного окна
             self.entry.clear()
             QTimer.singleShot(100, self.entry.setFocus)
+
+    def _apply_windows_dark_title_bar(self) -> None:
+        """Включает тёмную тему заголовка окна (Windows 10 1809+)."""
+        if platform.system() != "Windows":
+            return
+        try:
+            hwnd = int(self.winId())
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+            DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19
+            value = ctypes.c_int(1)
+            dwmapi = ctypes.windll.dwmapi
+            # Пытаемся применить новый атрибут, затем старый для совместимости
+            res = dwmapi.DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ctypes.byref(value), ctypes.sizeof(value))
+            if res != 0:
+                dwmapi.DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ctypes.byref(value), ctypes.sizeof(value))
+        except Exception:
+            pass
