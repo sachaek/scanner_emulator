@@ -62,6 +62,10 @@ class ScannerGUI(ThemedWindow):
         button.clicked.connect(self.on_scan)
         layout.addWidget(button)
 
+        img_btn = QPushButton("Сканировать изображение…")
+        img_btn.clicked.connect(self.on_scan_image)
+        layout.addWidget(img_btn)
+
         from_file_btn = QPushButton("Сканировать из файла…")
         from_file_btn.clicked.connect(self.on_scan_from_file)
         layout.addWidget(from_file_btn)
@@ -138,7 +142,6 @@ class ScannerGUI(ThemedWindow):
         if ret != QMessageBox.Ok:
             return
 
-        # Свернём окно, выполним пакет, затем восстановим
         was_on_top = bool(self.windowFlags() & Qt.WindowStaysOnTopHint)
         self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
         self.show()
@@ -148,6 +151,21 @@ class ScannerGUI(ThemedWindow):
 
         self.setWindowFlag(Qt.WindowStaysOnTopHint, was_on_top)
         self.showNormal()
+
+    def on_scan_image(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Выберите изображение", "", "Images (*.png *.jpg *.jpeg *.bmp);;All Files (*)")
+        if not path:
+            return
+        try:
+            from .barcodescannerfile import BarcodeImageScanner
+            reader = BarcodeImageScanner()
+            values = reader.decode_image(path)
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось распознать изображение:\n{e}")
+            return
+
+        text = "\n".join(values) if values else "Коды не найдены"
+        QMessageBox.information(self, "Результат", text)
 
 
     def open_scan_params(self):
