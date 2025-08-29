@@ -66,9 +66,7 @@ class ScannerGUI(ThemedWindow):
         img_btn.clicked.connect(self.on_scan_image)
         layout.addWidget(img_btn)
 
-        from_file_btn = QPushButton("Сканировать из файла…")
-        from_file_btn.clicked.connect(self.on_scan_from_file)
-        layout.addWidget(from_file_btn)
+        
 
         self.entry.returnPressed.connect(self.on_scan)
 
@@ -118,39 +116,7 @@ class ScannerGUI(ThemedWindow):
             self.entry.clear()
             QTimer.singleShot(100, self.entry.setFocus)
 
-    def on_scan_from_file(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Выберите файл со штрих-кодами", "", "Text Files (*.txt);;All Files (*)")
-        if not path:
-            return
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                lines = [line.strip() for line in f.readlines() if line.strip()]
-        except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось прочитать файл:\n{e}")
-            return
-
-        if not lines:
-            QMessageBox.information(self, "Пусто", "Файл не содержит штрих-кодов")
-            return
-
-        ret = QMessageBox.information(
-            self,
-            "Подготовка к сканированию",
-            "У вас 2 секунды чтобы переключиться на целевое окно\nНажмите OK для начала пакетного сканирования",
-            QMessageBox.Ok
-        )
-        if ret != QMessageBox.Ok:
-            return
-
-        was_on_top = bool(self.windowFlags() & Qt.WindowStaysOnTopHint)
-        self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
-        self.show()
-        self.showMinimized()
-
-        self.scanner.emulate_batch_typing(lines)
-
-        self.setWindowFlag(Qt.WindowStaysOnTopHint, was_on_top)
-        self.showNormal()
+    
 
     def on_scan_image(self):
         path, _ = QFileDialog.getOpenFileName(self, "Выберите изображение", "", "Images (*.png *.jpg *.jpeg *.bmp);;All Files (*)")
