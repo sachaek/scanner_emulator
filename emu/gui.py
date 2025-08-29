@@ -1,16 +1,16 @@
 """
-Модуль графического интерфейса
+Модуль графического интерфейса (PyQt)
 """
 
-import tkinter as tk
-from tkinter import messagebox
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox
 from .scanner import BarcodeScanner
 from .config import GUI_CONFIG
 
 
-class ScannerGUI:
-    def __init__(self, root: tk.Tk):
-        self.root = root
+class ScannerGUI(QWidget):
+    def __init__(self):
+        super().__init__()
         self.scanner = BarcodeScanner()
         self.setup_ui()
 
@@ -18,59 +18,96 @@ class ScannerGUI:
         """Настройка пользовательского интерфейса"""
         config = GUI_CONFIG
 
-        self.root.title(config['window_title'])
-        self.root.geometry(config['window_size'])
+        self.setWindowTitle(config['window_title'])
 
-        frame = tk.Frame(self.root, padx=20, pady=20)
-        frame.pack(expand=True, fill=tk.BOTH)
+        # Размер окна из строки вида "400x200"
+        try:
+            width, height = map(int, str(config.get('window_size', '400x200')).lower().split('x'))
+        except Exception:
+            width, height = 400, 200
+        self.resize(width, height)
 
-        # Элементы интерфейса
-        label = tk.Label(frame, text="Введите штрих-код:", font=config['font_style'])
-        label.pack(pady=(0, 10))
+        layout = QVBoxLayout()
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(10)
 
-        self.entry = tk.Entry(frame, font=config['font_style'], width=30)
-        self.entry.pack(pady=(0, 20))
+        label = QLabel("Введите штрих-код:")
+        # Применяем шрифт, если указан
+        try:
+            font_family, font_size = config['font_style'][0], config['font_style'][1]
+            label_font = label.font()
+            label_font.setFamily(font_family)
+            label_font.setPointSize(int(font_size))
+            label.setFont(label_font)
+        except Exception:
+            pass
+        layout.addWidget(label)
 
-        button = tk.Button(
-            frame, text="Сканировать", command=self.on_scan,
-            font=config['font_style'], **config['button_style']
-        )
-        button.pack()
+        self.entry = QLineEdit()
+        try:
+            entry_font = self.entry.font()
+            entry_font.setFamily(font_family)
+            entry_font.setPointSize(int(font_size))
+            self.entry.setFont(entry_font)
+        except Exception:
+            pass
+        layout.addWidget(self.entry)
 
-        self.entry.focus_set()
-        self.root.bind('<Return>', lambda event: self.on_scan())
+        button = QPushButton("Сканировать")
+        # Стили кнопки
+        btn_style = config.get('button_style', {})
+        bg = btn_style.get('bg')
+        fg = btn_style.get('fg')
+        if bg or fg:
+            button.setStyleSheet(
+                f"QPushButton {{"
+                f"{'background-color: ' + bg + ';' if bg else ''}"
+                f"{'color: ' + fg + ';' if fg else ''}"
+                f"}}"
+            )
+        button.setDefault(True)
+        button.clicked.connect(self.on_scan)
+        layout.addWidget(button)
+
+        self.entry.returnPressed.connect(self.on_scan)
+
+        self.setLayout(layout)
+        self.entry.setFocus()
 
     def on_scan(self):
         """Обработчик события сканирования"""
-        barcode = self.entry.get()
+        barcode = self.entry.text()
 
         if not self.scanner.validate_barcode(barcode):
-            messagebox.showerror(
+            QMessageBox.critical(
+                self,
                 "Ошибка",
                 f"Длина штрих-кода не может превышать {self.scanner.config['max_length']} символов",
-                parent=self.root
             )
             return
 
-        if messagebox.showinfo(
-                "Подготовка к сканированию",
-                "У вас 2 секунды чтобы переключиться на целевое окно\nНажмите OK для продолжения",
-                parent=self.root
-        ):
-            # Запоминаем текущее состояние поверх других окон
-            topmost = self.root.attributes('-topmost')
+        ret = QMessageBox.information(
+            self,
+            "Подготовка к сканированию",
+            "У вас 2 секунды чтобы переключиться на целевое окно\nНажмите OK для продолжения",
+            QMessageBox.Ok
+        )
+        if ret == QMessageBox.Ok:
+            # Запоминаем признак "поверх всех окон"
+            was_on_top = bool(self.windowFlags() & Qt.WindowStaysOnTopHint)
 
-            # Устанавливаем окно как не поверх других и сворачиваем
-            self.root.attributes('-topmost', False)
-            self.root.iconify()
+            # Убираем "поверх всех" и сворачиваем окно
+            self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
+            self.show()  # нужно переотобразить после смены флага
+            self.showMinimized()
 
             # Эмулируем ввод штрих-кода
             self.scanner.emulate_typing(barcode)
 
-            # Восстанавливаем окно без активации
-            self.root.deiconify()
-            self.root.attributes('-topmost', topmost)  # Восстанавливаем предыдущее состояние
+            # Восстанавливаем состояние
+            self.setWindowFlag(Qt.WindowStaysOnTopHint, was_on_top)
+            self.showNormal()
 
-            # Очищаем поле ввода и устанавливаем фокус без активации окна
-            self.entry.delete(0, tk.END)
-            self.root.after(100, lambda: self.entry.focus_force())  # focus_force вместо focus_set
+            # Очищаем поле и возвращаем фокус без навязывания активного окна
+            self.entry.clear()
+            QTimer.singleShot(100, self.entry.setFocus)

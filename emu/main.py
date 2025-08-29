@@ -1,16 +1,18 @@
 """
-Точка входа в приложение эмулятора сканера штрих-кодов
+Точка входа в приложение эмулятора сканера штрих-кодов (PyQt)
 """
 
-import tkinter as tk
+import sys
+from PyQt5.QtWidgets import QApplication
 from emu.gui import ScannerGUI
 
 
 def main():
-    root = tk.Tk()
-    app = ScannerGUI(root)
-    root.mainloop()
+    app = QApplication(sys.argv)
+    window = ScannerGUI()
+    window.show()
+    return app.exec_()
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

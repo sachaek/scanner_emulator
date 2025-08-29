@@ -2,7 +2,7 @@
 Модуль эмуляции сканера штрих-кодов
 """
 
-from pynput.keyboard import Controller, Key
+from pynput.keyboard import Controller, Key, KeyCode
 import time
 from .config import SCANNER_CONFIG
 
@@ -24,12 +24,18 @@ class BarcodeScanner:
         """
         time.sleep(self.config['initial_delay'])
 
-        for i, char in enumerate(barcode):
-            self.keyboard.press(char)
-            self.keyboard.release(char)
-            delay = self.config['first_char_delay'] if i == 0 else self.config['char_delay']
-            time.sleep(delay)
+        # Доп. пауза перед самым первым символом, чтобы целевое окно гарантированно приняло фокус
+        time.sleep(self.config.get('first_char_delay', 0.0))
 
+        for i, char in enumerate(barcode):
+            key_code = KeyCode.from_char(char)
+            self.keyboard.press(key_code)
+            time.sleep(self.config.get('key_hold_delay', 0.0))
+            self.keyboard.release(key_code)
+            time.sleep(self.config.get('char_delay', 0.0))
+
+        # Завершаем Enter с теми же паузами
         self.keyboard.press(Key.enter)
+        time.sleep(self.config.get('key_hold_delay', 0.0))
         self.keyboard.release(Key.enter)
         # Убрали завершение программы

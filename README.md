@@ -8,6 +8,13 @@
 - Реалистичная эмуляция ввода с настраиваемыми задержками
 - Portable версии для всех платформ
 
+## Запуск из исходников
+
+```bash
+pip install -r requirements.txt
+python -m emu.main
+```
+
 ## Установка Windows
 
 1. Скачайте `barcode_emulator.exe` из корневой папки 
