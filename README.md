@@ -8,6 +8,13 @@
 - Реалистичная эмуляция ввода с настраиваемыми задержками
 - Portable версии для всех платформ
 
+## Запуск из исходников
+
+```bash
+pip install -r requirements.txt
+python -m emu.main
+```
+
 ## Установка Windows
 
 1. Скачайте `barcode_emulator.exe` из корневой папки 
@@ -74,10 +81,10 @@ barcode_emulator/
 ```python
 SCANNER_CONFIG = {
     'initial_delay': 2.0,      # Задержка перед сканированием
-    'first_char_delay': 0.004, 
-    'char_delay': 0.005,
-    'max_length': 30,
-    'os_specific_delay': 0.1   # Доп. задержка для Linux/macOS
+    'first_char_delay': 0.0, 
+    'char_delay': 0.00,
+    'max_length': 55,
+    'os_specific_delay': 0.1  # Доп. задержка для Linux/macOS
 }
 ```
 

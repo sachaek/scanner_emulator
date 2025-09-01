@@ -1,16 +1,19 @@
 """
-Модуль графического интерфейса
+Модуль графического интерфейса (PyQt)
 """
 
-import tkinter as tk
-from tkinter import messagebox
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QAction, QFileDialog, QApplication
+import tempfile
+import os
 from .scanner import BarcodeScanner
 from .config import GUI_CONFIG
+from .theme import ThemedWindow
 
 
-class ScannerGUI:
-    def __init__(self, root: tk.Tk):
-        self.root = root
+class ScannerGUI(ThemedWindow):
+    def __init__(self):
+        super().__init__()
         self.scanner = BarcodeScanner()
         self.setup_ui()
 
@@ -18,59 +21,196 @@ class ScannerGUI:
         """Настройка пользовательского интерфейса"""
         config = GUI_CONFIG
 
-        self.root.title(config['window_title'])
-        self.root.geometry(config['window_size'])
+        self.setWindowTitle(config['window_title'])
 
-        frame = tk.Frame(self.root, padx=20, pady=20)
-        frame.pack(expand=True, fill=tk.BOTH)
+        # Размер окна из строки вида "400x200"
+        try:
+            width, height = map(int, str(config.get('window_size', '400x200')).lower().split('x'))
+        except Exception:
+            width, height = 400, 200
+        self.resize(width, height)
 
-        # Элементы интерфейса
-        label = tk.Label(frame, text="Введите штрих-код:", font=config['font_style'])
-        label.pack(pady=(0, 10))
+        # Центральный виджет и layout
+        central = QWidget(self)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(10)
 
-        self.entry = tk.Entry(frame, font=config['font_style'], width=30)
-        self.entry.pack(pady=(0, 20))
+        label = QLabel("Введите штрих-код:")
+        # Применяем шрифт, если указан
+        try:
+            font_family, font_size = config['font_style'][0], config['font_style'][1]
+            label_font = label.font()
+            label_font.setFamily(font_family)
+            label_font.setPointSize(int(font_size))
+            label.setFont(label_font)
+        except Exception:
+            pass
+        layout.addWidget(label)
 
-        button = tk.Button(
-            frame, text="Сканировать", command=self.on_scan,
-            font=config['font_style'], **config['button_style']
-        )
-        button.pack()
+        self.entry = QLineEdit()
+        try:
+            entry_font = self.entry.font()
+            entry_font.setFamily(font_family)
+            entry_font.setPointSize(int(font_size))
+            self.entry.setFont(entry_font)
+        except Exception:
+            pass
+        layout.addWidget(self.entry)
 
-        self.entry.focus_set()
-        self.root.bind('<Return>', lambda event: self.on_scan())
+        button = QPushButton("Сканировать")
+        # Темing управляется глобальным QSS в QApplication
+        button.setDefault(True)
+        button.clicked.connect(self.on_scan)
+        layout.addWidget(button)
+
+        img_btn = QPushButton("Сканировать изображение из файла")
+        img_btn.clicked.connect(self.on_scan_image)
+        layout.addWidget(img_btn)
+
+        clip_btn = QPushButton("Сканировать из буфера обмена")
+        clip_btn.clicked.connect(self.on_scan_clipboard)
+        layout.addWidget(clip_btn)
+
+        self.entry.returnPressed.connect(self.on_scan)
+
+        central.setLayout(layout)
+        self.setCentralWidget(central)
+        self._build_menu()
+        self.entry.setFocus()
+
+    def showEvent(self, event):
+        super().showEvent(event)
 
     def on_scan(self):
         """Обработчик события сканирования"""
-        barcode = self.entry.get()
+        barcode = self.entry.text()
 
         if not self.scanner.validate_barcode(barcode):
-            messagebox.showerror(
+            QMessageBox.critical(
+                self,
                 "Ошибка",
                 f"Длина штрих-кода не может превышать {self.scanner.config['max_length']} символов",
-                parent=self.root
             )
             return
 
-        if messagebox.showinfo(
-                "Подготовка к сканированию",
-                "У вас 2 секунды чтобы переключиться на целевое окно\nНажмите OK для продолжения",
-                parent=self.root
-        ):
-            # Запоминаем текущее состояние поверх других окон
-            topmost = self.root.attributes('-topmost')
+        ret = QMessageBox.information(
+            self,
+            "Подготовка к сканированию",
+            "У вас 2 секунды чтобы переключиться на целевое окно\nНажмите OK для продолжения",
+            QMessageBox.Ok
+        )
+        if ret == QMessageBox.Ok:
+            # Запоминаем признак "поверх всех окон"
+            was_on_top = bool(self.windowFlags() & Qt.WindowStaysOnTopHint)
 
-            # Устанавливаем окно как не поверх других и сворачиваем
-            self.root.attributes('-topmost', False)
-            self.root.iconify()
+            # Убираем "поверх всех" и сворачиваем окно
+            self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
+            self.show()  # нужно переотобразить после смены флага
+            self.showMinimized()
 
             # Эмулируем ввод штрих-кода
             self.scanner.emulate_typing(barcode)
 
-            # Восстанавливаем окно без активации
-            self.root.deiconify()
-            self.root.attributes('-topmost', topmost)  # Восстанавливаем предыдущее состояние
+            # Восстанавливаем состояние
+            self.setWindowFlag(Qt.WindowStaysOnTopHint, was_on_top)
+            self.showNormal()
 
-            # Очищаем поле ввода и устанавливаем фокус без активации окна
-            self.entry.delete(0, tk.END)
-            self.root.after(100, lambda: self.entry.focus_force())  # focus_force вместо focus_set
+            # Очищаем поле и возвращаем фокус без навязывания активного окна
+            self.entry.clear()
+            QTimer.singleShot(100, self.entry.setFocus)
+
+    
+
+    def on_scan_image(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Выберите изображение", "", "Images (*.png *.jpg *.jpeg *.bmp);;All Files (*)")
+        if not path:
+            return
+        try:
+            from .barcodescannerfile import BarcodeImageScanner
+            reader = BarcodeImageScanner()
+            values = reader.decode_image(path)
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось распознать изображение:\n{e}")
+            return
+
+        if not values:
+            QMessageBox.information(self, "Результат", "Коды не найдены")
+            return
+
+        # Подставляем первый найденный код в поле ввода и ставим фокус
+        self.entry.setText(values[0])
+        self.entry.setFocus()
+        self.entry.selectAll()
+
+    def on_scan_clipboard(self):
+        app = QApplication.instance()
+        if app is None:
+            QMessageBox.critical(self, "Ошибка", "Не удалось получить доступ к буферу обмена")
+            return
+
+        clipboard = app.clipboard()
+        img = clipboard.image()
+        if img.isNull():
+            QMessageBox.information(self, "Информация", "В буфере обмена нет изображения")
+            return
+
+        # Сохраняем изображение во временный файл
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp:
+            temp_path = temp.name
+        try:
+            img.save(temp_path, 'PNG')
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить изображение:\n{e}")
+            return
+
+        try:
+            from .barcodescannerfile import BarcodeImageScanner
+            reader = BarcodeImageScanner()
+            values = reader.decode_image(temp_path)
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось распознать изображение:\n{e}")
+        finally:
+            # Удаляем временный файл
+            try:
+                os.unlink(temp_path)
+            except Exception:
+                pass
+
+        if not values:
+            QMessageBox.information(self, "Результат", "Коды не найдены")
+            return
+
+        # Подставляем первый найденный код в поле ввода и ставим фокус
+        self.entry.setText(values[0])
+        self.entry.setFocus()
+        self.entry.selectAll()
+
+
+    def open_scan_params(self):
+        from .pages.scan_params import ScanParamsDialog
+        dlg = ScanParamsDialog(self)
+        dlg.exec_()
+
+    def _build_menu(self) -> None:
+        menubar = self.menuBar()
+
+        menu_file = menubar.addMenu("Файл")
+        act_exit = QAction("Выход", self)
+        act_exit.triggered.connect(self.close)
+        menu_file.addAction(act_exit)
+
+        menu_params = menubar.addMenu("Параметры")
+        act_scan_params = QAction("Параметры сканирования", self)
+        act_scan_params.triggered.connect(self.open_scan_params)
+        menu_params.addAction(act_scan_params)
+
+        menu_settings = menubar.addMenu("Настройки")
+        act_style = QAction("Стиль", self)
+        act_style.triggered.connect(self.open_style_settings)
+        menu_settings.addAction(act_style)
+
+    def open_style_settings(self):
+        from .pages.settings_style import StyleSettingsDialog
+        dlg = StyleSettingsDialog(self)
+        dlg.exec_()
