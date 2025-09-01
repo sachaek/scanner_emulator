@@ -64,11 +64,11 @@ class ScannerGUI(ThemedWindow):
         button.clicked.connect(self.on_scan)
         layout.addWidget(button)
 
-        img_btn = QPushButton("Сканировать изображение из файла")
+        img_btn = QPushButton("Barcode из файла")
         img_btn.clicked.connect(self.on_scan_image)
         layout.addWidget(img_btn)
 
-        clip_btn = QPushButton("Сканировать из буфера обмена")
+        clip_btn = QPushButton("Barcode из снимка экрана")
         clip_btn.clicked.connect(self.on_scan_clipboard)
         layout.addWidget(clip_btn)
 
