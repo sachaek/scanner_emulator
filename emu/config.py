@@ -74,7 +74,7 @@ def reset_scanner_override() -> None:
 
 # Настройки GUI
 GUI_CONFIG = {
-    'window_title': "Сушкоф. Эмулятор сканера штрих-кодов",
+    'window_title': "Scanner emu",
     'window_size': "400x200",
     'font_style': ("Arial", 12),
     'button_style': {
