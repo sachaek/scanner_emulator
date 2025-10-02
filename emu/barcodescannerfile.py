@@ -1,6 +1,8 @@
 """Распознавание штрихкодов/Datamatrix с изображений через pyrxing."""
 
 from typing import List
+import os
+import tempfile
 from .gs1 import normalize_gs1
 
 
@@ -14,7 +16,18 @@ class BarcodeImageScanner:
 
     def decode_image(self, image_path: str) -> List[str]:
         """Возвращает список строк, распознанных из изображения."""
-        results = self._read_barcodes(image_path)
+        # Выполняем распознавание во временном рабочем каталоге, чтобы
+        # внешние библиотеки не оставляли артефакты (например, thresholds_new.pnm)
+        cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            try:
+                os.chdir(tmpdir)
+                results = self._read_barcodes(image_path)
+            finally:
+                try:
+                    os.chdir(cwd)
+                except Exception:
+                    pass
         values: List[str] = []
         for item in results or []:
             # pyrxing обычно возвращает объекты с атрибутом .text
