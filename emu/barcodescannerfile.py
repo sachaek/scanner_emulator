@@ -1,6 +1,7 @@
 """Распознавание штрихкодов/Datamatrix с изображений через pyrxing."""
 
 from typing import List
+from .gs1 import normalize_gs1
 
 
 class BarcodeImageScanner:
@@ -27,7 +28,8 @@ class BarcodeImageScanner:
                 except Exception:
                     parsed = parsed.decode('latin-1', errors='ignore')
             if isinstance(parsed, str) and parsed:
-                values.append(parsed)
+                # Нормализуем к стандартному виду GS1 (убираем скобки, добавляем GS между переменной длиной)
+                values.append(normalize_gs1(parsed))
 
         # Удаляем дубликаты, сохраняя порядок
         seen = set()
