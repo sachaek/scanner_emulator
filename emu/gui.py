@@ -155,27 +155,35 @@ class ScannerGUI(ThemedWindow):
             QMessageBox.information(self, "Информация", "В буфере обмена нет изображения")
             return
 
-        # Сохраняем изображение во временный файл
-        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp:
-            temp_path = temp.name
-        try:
-            img.save(temp_path, 'PNG')
-        except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить изображение:\n{e}")
-            return
+        from .barcodescannerfile import BarcodeImageScanner
+        reader = BarcodeImageScanner()
 
+        # Пробуем обработать через память (Pillow)
         try:
-            from .barcodescannerfile import BarcodeImageScanner
-            reader = BarcodeImageScanner()
-            values = reader.decode_image(temp_path)
+            from PIL import ImageQt
+            import io
+            pil_img = ImageQt.fromqimage(img)
+            buf = io.BytesIO()
+            pil_img.save(buf, format='PNG')
+            values = reader.decode_bytes(buf.getvalue())
+        except ImportError:
+            # Fallback: сохраняем QImage во временный файл
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp:
+                temp_path = temp.name
+            try:
+                img.save(temp_path, 'PNG')
+                values = reader.decode_image(temp_path)
+            except Exception as e:
+                QMessageBox.critical(self, "Ошибка", f"Не удалось распознать изображение:\n{e}")
+                return
+            finally:
+                try:
+                    os.unlink(temp_path)
+                except Exception:
+                    pass
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось распознать изображение:\n{e}")
-        finally:
-            # Удаляем временный файл
-            try:
-                os.unlink(temp_path)
-            except Exception:
-                pass
+            return
 
         if not values:
             QMessageBox.information(self, "Результат", "Коды не найдены")

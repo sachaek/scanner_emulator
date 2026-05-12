@@ -14,7 +14,8 @@ SCANNER_CONFIG_DEFAULT: Dict[str, Any] = {
     'first_char_delay': 0.0,  # Задержка первого символа (сек)
     'char_delay': 0.005,  # Задержка последующих символов (сек)
     'key_hold_delay': 0.005,  # Удержание клавиши перед отпусканием (сек)
-    'max_length': 55  # Максимальная длина штрих-кода
+    'max_length': 55,  # Максимальная длина штрих-кода
+    'inter_code_delay': 0.1,  # Задержка между кодами в пакетном режиме (сек)
 }
 
 _OVERRIDE_PATH = os.path.join(get_user_data_dir(), 'scanner_config.json')
