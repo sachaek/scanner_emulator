@@ -175,3 +175,12 @@ cython_debug/
 .venv312/
 .idea/
 *.pnm
+
+# AI agent instructions
+CLAUDE.md
+.cursorrules
+.cursor/
+.windsurfrules
+.codeiumrules
+.aider*
+.github/copilot-instructions.md

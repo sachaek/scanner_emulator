@@ -218,6 +218,16 @@ class ScannerGUI(ThemedWindow):
         act_style.triggered.connect(self.open_style_settings)
         menu_settings.addAction(act_style)
 
+        menu_debug = menubar.addMenu("Отладка")
+        act_capture = QAction("Захват сканнера", self)
+        act_capture.triggered.connect(self.open_debug_capture)
+        menu_debug.addAction(act_capture)
+
+    def open_debug_capture(self):
+        from .pages.debug_capture import DebugCaptureDialog
+        dlg = DebugCaptureDialog(self)
+        dlg.exec_()
+
     def open_style_settings(self):
         from .pages.settings_style import StyleSettingsDialog
         dlg = StyleSettingsDialog(self)
