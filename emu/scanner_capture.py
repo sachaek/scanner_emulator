@@ -81,6 +81,9 @@ class ScannerCapture:
         self._scan_start_wall: Optional[float] = None
         self._captures: list[ScanCapture] = []
         self._suppress = False
+        self._modifiers: set[str] = set()
+        self._press_times: dict = {}
+        self._press_index: dict = {}
 
     # --- Публичные методы ---
 
@@ -102,6 +105,7 @@ class ScannerCapture:
         self._scan_start_wall = None
         self._listener = keyboard.Listener(
             on_press=self._on_press,
+            on_release=self._on_release,
             suppress=suppress,
         )
         self._listener.start()
@@ -114,6 +118,9 @@ class ScannerCapture:
         self._buffer.clear()
         self._last_perf = None
         self._scan_start_wall = None
+        self._modifiers.clear()
+        self._press_times.clear()
+        self._press_index.clear()
 
     # --- Внутренняя логика ---
 
@@ -134,9 +141,43 @@ class ScannerCapture:
         if not self._buffer:
             self._scan_start_wall = time.time()
 
+        # Отслеживание модификаторов (нужно для детекции GS)
+        if key in (Key.ctrl, Key.ctrl_r):
+            self._modifiers.add('ctrl')
+        elif key in (Key.shift, Key.shift_r):
+            self._modifiers.add('shift')
+        elif key in (Key.alt, Key.alt_r):
+            self._modifiers.add('alt')
+
+        # Сохраняем время нажатия и индекс в буфере для замера hold_ms
+        self._press_times[key] = now_perf
+        self._press_index[key] = len(self._buffer)
+
+        ch = key.char if hasattr(key, 'char') else None
+
         # ENTER — завершаем текущий скан
         if key == Key.enter:
             self._finalize_scan(delay_ms)
+            return not self._suppress
+
+        # GS (0x1D) — пришёл как управляющий символ
+        if ch == '\x1d':
+            self._buffer.append({
+                "char": "\x1d",
+                "display": "[GS]",
+                "delay_ms": round(delay_ms, 1),
+                "is_special": True,
+            })
+            return not self._suppress
+
+        # GS (0x1D) — через Ctrl+]
+        if ch == ']' and 'ctrl' in self._modifiers:
+            self._buffer.append({
+                "char": "\x1d",
+                "display": "[GS]",
+                "delay_ms": round(delay_ms, 1),
+                "is_special": True,
+            })
             return not self._suppress
 
         # Спецклавиша
@@ -159,13 +200,32 @@ class ScannerCapture:
             return not self._suppress
 
         # Обычный символ
-        if hasattr(key, 'char') and key.char is not None:
+        if ch is not None:
             self._buffer.append({
-                "char": key.char,
+                "char": ch,
                 "delay_ms": round(delay_ms, 1),
                 "is_special": False,
             })
             return not self._suppress
+
+        return not self._suppress
+
+    def _on_release(self, key, injected: bool = False):
+        """Callback отпускания клавиши — замер hold_ms."""
+        # Обновляем состояние модификаторов
+        if key in (Key.ctrl, Key.ctrl_r):
+            self._modifiers.discard('ctrl')
+        elif key in (Key.shift, Key.shift_r):
+            self._modifiers.discard('shift')
+        elif key in (Key.alt, Key.alt_r):
+            self._modifiers.discard('alt')
+
+        # Замер времени удержания
+        press_time = self._press_times.pop(key, None)
+        idx = self._press_index.pop(key, None)
+        if press_time is not None and idx is not None and idx < len(self._buffer):
+            hold_ms = (time.perf_counter() - press_time) * 1000
+            self._buffer[idx]["hold_ms"] = round(hold_ms, 1)
 
         return not self._suppress
 
@@ -181,24 +241,26 @@ class ScannerCapture:
             "is_special": True,
         })
 
-        # Собираем barcode из обычных символов (без спецклавиш)
-        barcode_chars = [
-            c["char"] for c in self._buffer
-            if not c.get("is_special")
-        ]
+        # Собираем barcode: обычные символы + GS (0x1D), без управляющих спецклавиш
+        barcode_chars = []
+        for c in self._buffer:
+            if not c.get("is_special"):
+                barcode_chars.append(c["char"])
+            elif c["char"] == "\x1d":  # GS — часть данных штрихкода
+                barcode_chars.append("\x1d")
         barcode = "".join(barcode_chars)
 
-        # Метрики
+        # Метрики (только по символам данных, без [ENTER] и управляющих)
         delays = [c["delay_ms"] for c in self._buffer[1:]]
         total_duration = round(sum(delays), 1) if delays else 0.0
 
-        non_special_delays = [
+        data_delays = [
             c["delay_ms"] for c in self._buffer[1:]
-            if not c.get("is_special")
+            if not c.get("is_special") or c["char"] == "\x1d"
         ]
         avg_delay = (
-            round(sum(non_special_delays) / len(non_special_delays), 1)
-            if non_special_delays
+            round(sum(data_delays) / len(data_delays), 1)
+            if data_delays
             else 0.0
         )
 
@@ -219,6 +281,9 @@ class ScannerCapture:
         self._buffer.clear()
         self._last_perf = None
         self._scan_start_wall = None
+        self._modifiers.clear()
+        self._press_times.clear()
+        self._press_index.clear()
 
     # --- Логирование ---
 
@@ -242,8 +307,8 @@ class ScannerCapture:
             f" | Avg delay: {capture.avg_interchar_delay_ms}ms",
             "",
             "Character breakdown:",
-            " # | Char       | Delay(ms) | Notes",
-            "---|------------|-----------|----------------",
+            " # | Char       | Delay(ms) | Hold(ms) | Notes",
+            "---|------------|-----------|----------|----------------",
         ]
         for i, c in enumerate(capture.chars):
             note = ""
@@ -251,11 +316,12 @@ class ScannerCapture:
                 note = "first char"
             elif c.get("char") == "[ENTER]":
                 note = "suffix"
-            c_char = c.get("char", "?")
+            c_char = c.get("display", c.get("char", "?"))
             if len(c_char) > 10:
                 c_char = c_char[:9] + "…"
             lines.append(
-                f"{i:>2} | {c_char:<10} | {c['delay_ms']:>7.1f}  | {note}"
+                f"{i:>2} | {c_char:<10} | {c['delay_ms']:>7.1f}  |"
+                f" {c.get('hold_ms', 0.0):>6.1f}   | {note}"
             )
 
         lines.extend([
@@ -276,8 +342,8 @@ class ScannerCapture:
             f"Avg delay: {capture.avg_interchar_delay_ms}ms",
             "",
             "Character breakdown:",
-            "  # | Char       | Delay(ms) | Notes",
-            "  --|------------|-----------|----------------",
+            "  # | Char       | Delay(ms) | Hold(ms) | Notes",
+            "  --|------------|-----------|----------|----------------",
         ]
         for i, c in enumerate(capture.chars):
             note = ""
@@ -285,11 +351,12 @@ class ScannerCapture:
                 note = "first char"
             elif c.get("char") == "[ENTER]":
                 note = "suffix"
-            c_char = c.get("char", "?")
+            c_char = c.get("display", c.get("char", "?"))
             if len(c_char) > 10:
                 c_char = c_char[:9] + "…"
             lines.append(
-                f"  {i:>2} | {c_char:<10} | {c['delay_ms']:>7.1f} | {note}"
+                f"  {i:>2} | {c_char:<10} | {c['delay_ms']:>7.1f} |"
+                f" {c.get('hold_ms', 0.0):>6.1f}  | {note}"
             )
 
         special = capture.special_keys
