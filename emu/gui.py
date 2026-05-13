@@ -59,7 +59,7 @@ class ScannerGUI(ThemedWindow):
         layout.addWidget(self.entry)
 
         button = QPushButton("Сканировать")
-        # Темing управляется глобальным QSS в QApplication
+        button.setObjectName("scanButton")
         button.setDefault(True)
         button.clicked.connect(self.on_scan)
         layout.addWidget(button)
@@ -97,7 +97,7 @@ class ScannerGUI(ThemedWindow):
         ret = QMessageBox.information(
             self,
             "Подготовка к сканированию",
-            "У вас 2 секунды чтобы переключиться на целевое окно\nНажмите OK для продолжения",
+            "У вас ~4 секунды чтобы переключиться на целевое окно\nНажмите OK для продолжения",
             QMessageBox.Ok
         )
         if ret == QMessageBox.Ok:

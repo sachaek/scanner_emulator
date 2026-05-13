@@ -40,6 +40,15 @@ QPushButton:disabled {
     border-color: #2A2A2A;
 }
 
+QPushButton#scanButton {
+    background: #5C6BC0;
+    color: #FFFFFF;
+    border: 1px solid #7986CB;
+    font-weight: bold;
+}
+QPushButton#scanButton:hover { background: #7986CB; }
+QPushButton#scanButton:pressed { background: #4A5AAE; }
+
 QMessageBox { background-color: #1A1A1A; }
 
 QMenuBar {
@@ -106,6 +115,15 @@ QPushButton:disabled {
     background: #F3F3F3;
     border-color: #DDDDDD;
 }
+
+QPushButton#scanButton {
+    background: #5C6BC0;
+    color: #FFFFFF;
+    border: 1px solid #7986CB;
+    font-weight: bold;
+}
+QPushButton#scanButton:hover { background: #7986CB; }
+QPushButton#scanButton:pressed { background: #4A5AAE; }
 
 QMessageBox { background-color: #FFFFFF; }
 
