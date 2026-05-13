@@ -3,7 +3,7 @@
 """
 
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QAction, QFileDialog, QApplication
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QToolButton, QMenu, QMessageBox, QAction, QFileDialog, QApplication, QSizePolicy
 import tempfile
 import os
 from .scanner import BarcodeScanner
@@ -15,6 +15,7 @@ class ScannerGUI(ThemedWindow):
     def __init__(self):
         super().__init__()
         self.scanner = BarcodeScanner()
+        self._barcode_mode = 'clipboard'
         self.setup_ui()
 
     def setup_ui(self):
@@ -64,13 +65,22 @@ class ScannerGUI(ThemedWindow):
         button.clicked.connect(self.on_scan)
         layout.addWidget(button)
 
-        img_btn = QPushButton("Barcode из файла")
-        img_btn.clicked.connect(self.on_scan_image)
-        layout.addWidget(img_btn)
+        # Split-кнопка: Barcode из снимка экрана / из файла
+        self.barcode_btn = QToolButton()
+        self.barcode_btn.setText("Barcode из снимка экрана")
+        self.barcode_btn.setPopupMode(QToolButton.MenuButtonPopup)
+        self.barcode_btn.clicked.connect(self._on_barcode_clicked)
 
-        clip_btn = QPushButton("Barcode из снимка экрана")
-        clip_btn.clicked.connect(self.on_scan_clipboard)
-        layout.addWidget(clip_btn)
+        barcode_menu = QMenu(self)
+        act_clip = barcode_menu.addAction("Из снимка экрана")
+        act_file = barcode_menu.addAction("Из файла")
+        act_clip.triggered.connect(self._set_barcode_clip)
+        act_file.triggered.connect(self._set_barcode_file)
+        self.barcode_btn.setMenu(barcode_menu)
+
+        self.barcode_btn.setMinimumHeight(32)
+        self.barcode_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        layout.addWidget(self.barcode_btn)
 
         self.entry.returnPressed.connect(self.on_scan)
 
@@ -193,6 +203,24 @@ class ScannerGUI(ThemedWindow):
         self.entry.setText(values[0])
         self.entry.setFocus()
         self.entry.selectAll()
+
+
+    def _on_barcode_clicked(self):
+        """Нажатие на кнопку Barcode (без стрелки) — выполняет текущий режим."""
+        if self._barcode_mode == 'clipboard':
+            self.on_scan_clipboard()
+        else:
+            self.on_scan_image()
+
+    def _set_barcode_clip(self):
+        self._barcode_mode = 'clipboard'
+        self.barcode_btn.setText("Barcode из снимка экрана")
+        self.on_scan_clipboard()
+
+    def _set_barcode_file(self):
+        self._barcode_mode = 'file'
+        self.barcode_btn.setText("Barcode из файла")
+        self.on_scan_image()
 
 
     def open_scan_params(self):

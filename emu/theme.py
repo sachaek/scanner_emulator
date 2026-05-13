@@ -40,6 +40,20 @@ QPushButton:disabled {
     border-color: #2A2A2A;
 }
 
+QToolButton {
+    background: #2A2A2A;
+    color: #E0E0E0;
+    border: 1px solid #3A3A3A;
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+QToolButton:hover { background: #323232; }
+QToolButton:pressed { background: #262626; }
+QToolButton::menu-button {
+    border-left: 1px solid #3A3A3A;
+    width: 20px;
+}
+
 QPushButton#scanButton {
     background: #5C6BC0;
     color: #FFFFFF;
@@ -114,6 +128,20 @@ QPushButton:disabled {
     color: #9B9B9B;
     background: #F3F3F3;
     border-color: #DDDDDD;
+}
+
+QToolButton {
+    background: #FFFFFF;
+    color: #1A1A1A;
+    border: 1px solid #C8C8C8;
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+QToolButton:hover { background: #F0F0F0; }
+QToolButton:pressed { background: #E8E8E8; }
+QToolButton::menu-button {
+    border-left: 1px solid #C8C8C8;
+    width: 20px;
 }
 
 QPushButton#scanButton {
