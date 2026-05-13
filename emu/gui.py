@@ -236,12 +236,10 @@ class ScannerGUI(ThemedWindow):
         act_exit.triggered.connect(self.close)
         menu_file.addAction(act_exit)
 
-        menu_params = menubar.addMenu("Параметры")
+        menu_settings = menubar.addMenu("Настройки")
         act_scan_params = QAction("Параметры сканирования", self)
         act_scan_params.triggered.connect(self.open_scan_params)
-        menu_params.addAction(act_scan_params)
-
-        menu_settings = menubar.addMenu("Настройки")
+        menu_settings.addAction(act_scan_params)
         act_style = QAction("Стиль", self)
         act_style.triggered.connect(self.open_style_settings)
         menu_settings.addAction(act_style)
